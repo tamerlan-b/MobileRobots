@@ -95,13 +95,13 @@ roslaunch simple_controller controller_stage.launch
 	Остановить проект можно с помощью ctrl-C в консоли
 
 ## Практические задания курса
-1. [Контроллер управления движением по траектории](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_controller)
-2. [Контроллер управления скоростью](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/velocity_controller)
-3. [MPC контроллер](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/mpc_controller)
-4. [Планирование траектории](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_planner)
-5. [Построение карты](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_map)
-6. [Локализация по дальномеру](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/feature_matcher)
-7. [EKF SLAM](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/barrel_slam)
+- [X] 1. [Контроллер управления движением по траектории](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_controller)
+- [ ] 2. [Контроллер управления скоростью](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/velocity_controller)
+- [ ] 3. [MPC контроллер](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/mpc_controller)
+- [ ] 4. [Планирование траектории](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_planner)
+- [ ] 5. [Построение карты](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/simple_map)
+- [ ] 6. [Локализация по дальномеру](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/feature_matcher)
+- [ ] 7. [EKF SLAM](https://github.com/AndreyMinin/MobileRobots/tree/master/mr_ws/src/barrel_slam)
 
 
 
