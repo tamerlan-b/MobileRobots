@@ -7,7 +7,6 @@
 
 #include "controller.h"
 
-#include <std_msgs/Float32.h>
 #include <sensor_msgs/PointCloud.h>
 #include <tf/transform_datatypes.h>
 
@@ -38,6 +37,7 @@ void Controller::on_path(const nav_msgs::Path& path) {
   ROS_INFO_STREAM("Got path " << path.poses.size());
   this->path = path;
   nearest_point_index = 0;
+  target_point_index = 0;
 }
 
 // search a pose in the pat nearest to the robot, assume path may be cyclic
@@ -72,21 +72,8 @@ std::size_t Controller::get_nearest_path_pose_index(int start_index,
   return nearest_index;
 }
 
-void Controller::on_timer(const ros::TimerEvent& event)
+double Controller::get_pid_control(double error)
 {
-  if (std::abs(current_linear_velocity) < 0.01) {
-    return;
-  }
-  update_robot_pose((ros::Time::now() - robot_time).toSec() );
-
-  nearest_point_index = get_nearest_path_pose_index(nearest_point_index - 10, 20);
-
-  const auto& nearest_pose = path.poses[nearest_point_index].pose;
-  const auto& nearest_pose_angle = tf::getYaw(nearest_pose.orientation);
-  double dx = robot_x - nearest_pose.position.x;
-  double dy = robot_y - nearest_pose.position.y;
-  // error is negative difference by y axe in the axis of the nereset pose
-  double error = -(-dx * sin(nearest_pose_angle) + dy * cos(nearest_pose_angle));
   double diff_err = error - last_error;
   last_error = error;
   if ( fabs(error) < max_antiwindup_error )
@@ -95,11 +82,51 @@ void Controller::on_timer(const ros::TimerEvent& event)
     error_integral = 0.0;
 
   //Desired angular velocity
-  double angular_cmd =  p_factor * error
+  double cmd =  p_factor * error
                       + d_factor * diff_err
                       + i_factor * error_integral;
+  return cmd;
+}
+
+std::size_t Controller::get_target_path_pose_index(int old_target_index,
+                                                    double ld)
+{
+  double distance_sqr = 0;
+  std::size_t real_index;
+
+  for (int index = old_target_index - 10; distance_sqr < ld*ld; ++index) {
+    if (index < 0) {
+      real_index = (static_cast<int>(path.poses.size()) + index);
+    }
+    else if (index >= static_cast<int>(path.poses.size())) {
+      real_index = static_cast<std::size_t>(index) - path.poses.size();
+    }
+    else{
+      real_index = static_cast<std::size_t>(index);
+    }
+    const auto& path_point = path.poses[real_index].pose.position;
+    double dx = robot_x - path_point.x;
+    double dy = robot_y - path_point.y;
+    distance_sqr = dx * dx + dy * dy;
+  }
+  return real_index;
+}
+
+void Controller::on_timer(const ros::TimerEvent& event)
+{
+  if (std::abs(current_linear_velocity) < 0.01) {
+    return;
+  }
+  update_robot_pose((ros::Time::now() - robot_time).toSec() );
+
+  double lookahead_distance = 3.0;
+  target_point_index = get_target_path_pose_index(target_point_index, lookahead_distance);
+  const auto& target_pose = path.poses[target_point_index].pose;
+  double x = target_pose.position.x - robot_x;
+  double y = target_pose.position.y - robot_y;
+  double error = -x*sin(robot_theta) + y*cos(robot_theta);
   //curvature for calculated angular velocity and for current linear velocity
-  double curvature = angular_cmd / current_linear_velocity;
+  double curvature = 2.0*error/(lookahead_distance*lookahead_distance);
 
   //send curvature as command to drives
   std_msgs::Float32 cmd;
@@ -108,10 +135,9 @@ void Controller::on_timer(const ros::TimerEvent& event)
 
   //send trajectory for velocity controller
   publish_trajectory();
-
   //send error for debug proposes
   publish_error(error);
-  ROS_DEBUG_STREAM("steering cmd = "<<curvature);
+  ROS_DEBUG_STREAM("steering cmd = " << curvature);
 }
 
 void Controller::on_pose(const nav_msgs::OdometryConstPtr& odom)

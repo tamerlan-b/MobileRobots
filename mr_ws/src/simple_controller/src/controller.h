@@ -12,6 +12,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/Path.h>
+#include <std_msgs/Float32.h>
 #include <list>
 #include <memory>
 
@@ -69,6 +70,7 @@ protected:
 
   nav_msgs::Path path;
   std::size_t nearest_point_index;
+  std::size_t target_point_index;
 
   /// \ current segment
   std::list<TrajPtr>::iterator current_segment;
@@ -84,6 +86,10 @@ protected:
   ros::Publisher path_pub;
   /// \ frame_id for coordinates of controller
   std::string world_frame_id;
+
+  double get_pid_control(double error);
+
+  std::size_t get_target_path_pose_index(int old_target_index, double ld);
 
   void on_timer(const ros::TimerEvent& event);
   void on_pose(const nav_msgs::OdometryConstPtr& odom);
