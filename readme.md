@@ -8,7 +8,7 @@
 * Папка mr_ws - рабочая папка с проектами ros. В докер-образе эта папка монтируется как `/home/$USER/local/workspace/mr_ws`
 Сборка проекта из под docker опциональна. Можно собирать в нативном окружении, обеспечив установку зависимостей проектов. В докер образе эти зависимости уже установлены, что делает жизнь проще. В докере установлена ОС Ubuntu и ROS melodic. 
 ## Использование docker 
-0. Установливаем Docker по инструкции: https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/#os-requirements. Настраиваем Docker для работы с ним без root доступа (без sudo): https://docs.docker.com/install/linux/linux-postinstall/
+0. Установливаем Docker по инструкции: https://docs.docker.com/engine/install/ubuntu/#os-requirements:~:text=This%20example%20downloads,Docker%20on%20Linux%3A (удобнее всего через sh-скрипт). Настраиваем Docker для работы с ним без root доступа (без sudo): https://docs.docker.com/install/linux/linux-postinstall/
 1. Клонируем репозиторий
 ```bash
 $git clone https://github.com/AndreyMinin/MobileRobots.git <папка для размещения проекта>
