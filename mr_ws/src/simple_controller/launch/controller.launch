@@ -24,5 +24,10 @@
     <!-- start gzclient via script -->
     <node name="gzclient" pkg="simple_controller" type="start_gzclient" output="screen">
     </node>
+    
+    <node name="simple_controller_rviz" pkg="rviz" type="rviz" args="-d $(find simple_controller)/rviz/simple_controller.rviz" output="screen" />
+
+    <!-- Pseudo localization -->
+    <node name="odom_world_pub" pkg="tf" type="static_transform_publisher" args="0 0 0 0 0 0 world odom 100"/>
 
 </launch>
