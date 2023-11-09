@@ -135,7 +135,8 @@ void Planner::increase_obstacles(std::size_t cells)
 }
 
 double Planner::heruistic(int i, int j) {
-  return 0;
+  MapIndex target_index = point_index(target_pose_.position.x, target_pose_.position.y);
+  return sqrt(std::pow(target_index.i-i, 2) + std::pow(target_index.j-j, 2));
 }
 
 class CompareSearchNodes {
@@ -156,39 +157,91 @@ private:
   Planner& planner_;
 };
 
-void Planner::calculate_path()
+void Planner::calculate_path_wave()
 {
   // очищаем карту поиска
   search_map_.resize(map_.data.size());
   std::fill(search_map_.begin(), search_map_.end(), SearchNode());
   path_msg_.points.clear();
 
-  // Здесь необходимо продолжить код для поиска пути
-  std::set<MapIndex, CompareSearchNodes> queue(CompareSearchNodes(*this));
   MapIndex start_index = point_index(start_pose_.position.x, start_pose_.position.y);
   SearchNode& start = map_value(search_map_, start_index.i, start_index.j);
   start.g = 0;
-  start.h = heruistic(start_index.i, start_index.j);
   start.state = SearchNode::OPEN;
-
+  std::queue<MapIndex> queue;
+  
   auto& start_obstacle_value = map_value(obstacle_map_.data, start_index.i, start_index.j);
   if (start_obstacle_value == kObstacleValue) {
   	ROS_WARN_STREAM("Start is in obstacle!");
   	return;
   }
-  queue.insert(start_index);
-
+  queue.push(start_index);
+  
   MapIndex target_index = point_index(target_pose_.position.x, target_pose_.position.y);
   bool found = false;
+
+  int summ_weight = 0;
   while (!queue.empty()) {
-  	auto node_index_iter = queue.begin();
-  	auto node_index = *node_index_iter;
+  	auto node_index = queue.front();
+    queue.pop();
+
   	auto& node = map_value(search_map_, node_index.i, node_index.j);
   	node.state = SearchNode::CLOSE;
-  	queue.erase(node_index_iter);
+    node.i = node_index.i;
+    node.j = node_index.j;
+    SearchNode* previous_node = node.previous_node;
+    if (previous_node != NULL)
+      node.g = previous_node->g + 1;
 
-  	// insert code here
+    if (indices_in_map(node_index.i-1, node_index.j)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i-1;
+      neighbour_index.j = node_index.j;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.state = SearchNode::OPEN;
+        neighbour.previous_node = &node;
+        queue.push(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i, node_index.j-1)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i;
+      neighbour_index.j = node_index.j-1;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.state = SearchNode::OPEN;
+        neighbour.previous_node = &node;
+        queue.push(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i+1, node_index.j)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i+1;
+      neighbour_index.j = node_index.j;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.state = SearchNode::OPEN;
+        neighbour.previous_node = &node;
+        queue.push(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i, node_index.j+1)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i;
+      neighbour_index.j = node_index.j+1;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.state = SearchNode::OPEN;
+        neighbour.previous_node = &node;
+        queue.push(neighbour_index);
+      }
+    }
 
+    if ((node_index.i == target_index.i) && (node_index.j == target_index.j)){
+      found = true;
+      break;
+    }
   }
 
   // fill path message with points from path 
@@ -203,11 +256,147 @@ void Planner::calculate_path()
   		path_msg_.points.push_back(p);
   		ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
   		double min_g = node.g;
-  		
+
+      SearchNode* previous_node = node.previous_node;		
+      i = previous_node->i;
+      j = previous_node->j;
   	}
   }
-
-
 }
 
-} /* namespace simple_planner */
+void Planner::calculate_path()
+{
+  // очищаем карту поиска
+  search_map_.resize(map_.data.size());
+  std::fill(search_map_.begin(), search_map_.end(), SearchNode());
+  path_msg_.points.clear();
+
+  std::set<MapIndex, CompareSearchNodes> queue(CompareSearchNodes(*this));
+  MapIndex start_index = point_index(start_pose_.position.x, start_pose_.position.y);
+  SearchNode& start = map_value(search_map_, start_index.i, start_index.j);
+  start.g = 0;
+  start.h = heruistic(start_index.i, start_index.j);
+  start.state = SearchNode::OPEN;
+  
+  auto& start_obstacle_value = map_value(obstacle_map_.data, start_index.i, start_index.j);
+  if (start_obstacle_value == kObstacleValue) {
+  	ROS_WARN_STREAM("Start is in obstacle!");
+  	return;
+  }
+  queue.insert(start_index);
+  
+  MapIndex target_index = point_index(target_pose_.position.x, target_pose_.position.y);
+  bool found = false;
+
+  int summ_weight = 0;
+  while (!queue.empty()) {
+  	auto node_index_iter = queue.begin();
+  	auto node_index = *node_index_iter;
+
+  	auto& node = map_value(search_map_, node_index.i, node_index.j);
+  	node.state = SearchNode::CLOSE;
+    node.i = node_index.i;
+    node.j = node_index.j;
+    SearchNode* previous_node = node.previous_node;
+    if (previous_node != NULL)
+      node.g = previous_node->g + 1;
+    
+    if (indices_in_map(node_index.i-1, node_index.j)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i-1;
+      neighbour_index.j = node_index.j;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((node.g+1 < neighbour.g) && (neighbour.state == SearchNode::OPEN)){
+        neighbour.previous_node = &node;
+        queue.erase(neighbour_index);
+        queue.insert(neighbour_index);
+      }
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.h = heruistic(neighbour_index.i, neighbour_index.j);
+        neighbour.state = SearchNode::OPEN;
+        neighbour.g = node.g+1;
+        neighbour.previous_node = &node;
+        queue.insert(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i, node_index.j-1)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i;
+      neighbour_index.j = node_index.j-1;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((node.g+1 < neighbour.g) && (neighbour.state == SearchNode::OPEN)){
+        neighbour.previous_node = &node;
+        queue.erase(neighbour_index);
+        queue.insert(neighbour_index);
+      }
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.h = heruistic(neighbour_index.i, neighbour_index.j);
+        neighbour.state = SearchNode::OPEN;
+        neighbour.g = node.g+1;
+        neighbour.previous_node = &node;
+        queue.insert(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i+1, node_index.j)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i+1;
+      neighbour_index.j = node_index.j;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((node.g+1 < neighbour.g) && (neighbour.state == SearchNode::OPEN)){
+        neighbour.previous_node = &node;
+        queue.erase(neighbour_index);
+        queue.insert(neighbour_index);
+      }
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.h = heruistic(neighbour_index.i, neighbour_index.j);
+        neighbour.state = SearchNode::OPEN;
+        neighbour.g = node.g+1;
+        neighbour.previous_node = &node;
+        queue.insert(neighbour_index);
+      }
+    }
+    if (indices_in_map(node_index.i, node_index.j+1)){
+      MapIndex neighbour_index;
+      neighbour_index.i = node_index.i;
+      neighbour_index.j = node_index.j+1;
+      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
+      if ((node.g+1 < neighbour.g) && (neighbour.state == SearchNode::OPEN)){
+        neighbour.previous_node = &node;
+        queue.erase(neighbour_index);
+        queue.insert(neighbour_index);
+      }
+      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
+        neighbour.h = heruistic(neighbour_index.i, neighbour_index.j);
+        neighbour.state = SearchNode::OPEN;
+        neighbour.g = node.g+1;
+        neighbour.previous_node = &node;
+        queue.insert(neighbour_index);
+      }
+    }
+    queue.erase(node_index_iter);
+    if ((node_index.i == target_index.i) && (node_index.j == target_index.j)){
+      found = true;
+      break;
+    }
+  }
+
+  // fill path message with points from path 
+  if (found) {
+  	int i = target_index.i;
+  	int j = target_index.j;
+  	geometry_msgs::Point32 p;
+  	while (i != start_index.i || j != start_index.j) {
+  		p.x = i * map_.info.resolution + map_.info.origin.position.x;
+  		p.y = j * map_.info.resolution + map_.info.origin.position.y;
+  		auto& node = map_value(search_map_, i, j);
+  		path_msg_.points.push_back(p);
+  		ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
+  		double min_g = node.g;
+
+      SearchNode* previous_node = node.previous_node;		
+      i = previous_node->i;
+      j = previous_node->j;
+  	}
+  }
+}
+

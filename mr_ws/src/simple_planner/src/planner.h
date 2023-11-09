@@ -25,6 +25,9 @@ struct SearchNode{
    double g = std::numeric_limits<double>::max();
    // значение функции эвристики
    double h = 0;
+   SearchNode* previous_node = NULL;
+   int i = 0;
+   int j = 0;
 };
 
 struct MapIndex {
@@ -50,6 +53,7 @@ private:
   void increase_obstacles(std::size_t cells);
   // функция вычисления пути в заданную точку
   void calculate_path();
+  void calculate_path_wave();
 
   double heruistic(int i, int j);
 
