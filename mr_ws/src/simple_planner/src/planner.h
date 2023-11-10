@@ -59,6 +59,8 @@ private:
 
   std::vector<MapIndex> get_neighbours(const MapIndex& pt);
 
+  void create_path(const MapIndex& start_index, const MapIndex& target_index);
+
   // функции для работы с картами и индексами
   // Проверка индексов на нахождение в карте
   bool indices_in_map(int i, int j);
