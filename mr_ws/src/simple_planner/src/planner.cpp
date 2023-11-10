@@ -193,49 +193,24 @@ void Planner::calculate_path_wave()
     SearchNode* previous_node = node.previous_node;
     if (previous_node != NULL)
       node.g = previous_node->g + 1;
+    
+    MapIndex neighbours[] = {
+      {node_index.i-1, node_index.j},
+      {node_index.i, node_index.j-1},
+      {node_index.i+1, node_index.j},
+      {node_index.i, node_index.j+1}
+    };
 
-    if (indices_in_map(node_index.i-1, node_index.j)){
-      MapIndex neighbour_index;
-      neighbour_index.i = node_index.i-1;
-      neighbour_index.j = node_index.j;
-      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
-      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
-        neighbour.state = SearchNode::OPEN;
-        neighbour.previous_node = &node;
-        queue.push(neighbour_index);
-      }
-    }
-    if (indices_in_map(node_index.i, node_index.j-1)){
-      MapIndex neighbour_index;
-      neighbour_index.i = node_index.i;
-      neighbour_index.j = node_index.j-1;
-      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
-      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
-        neighbour.state = SearchNode::OPEN;
-        neighbour.previous_node = &node;
-        queue.push(neighbour_index);
-      }
-    }
-    if (indices_in_map(node_index.i+1, node_index.j)){
-      MapIndex neighbour_index;
-      neighbour_index.i = node_index.i+1;
-      neighbour_index.j = node_index.j;
-      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
-      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
-        neighbour.state = SearchNode::OPEN;
-        neighbour.previous_node = &node;
-        queue.push(neighbour_index);
-      }
-    }
-    if (indices_in_map(node_index.i, node_index.j+1)){
-      MapIndex neighbour_index;
-      neighbour_index.i = node_index.i;
-      neighbour_index.j = node_index.j+1;
-      auto& neighbour = map_value(search_map_, neighbour_index.i, neighbour_index.j);
-      if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, neighbour_index.i, neighbour_index.j)) != kObstacleValue){
-        neighbour.state = SearchNode::OPEN;
-        neighbour.previous_node = &node;
-        queue.push(neighbour_index);
+    for (MapIndex & nb : neighbours)
+    {
+      if (indices_in_map(nb.i, nb.j))
+      {
+        auto& neighbour = map_value(search_map_, nb.i, nb.j);
+        if ((neighbour.state == SearchNode::UNDEFINED) && (map_value(obstacle_map_.data, nb.i, nb.j)) != kObstacleValue){
+          neighbour.state = SearchNode::OPEN;
+          neighbour.previous_node = &node;
+          queue.push(nb);
+        }
       }
     }
 
@@ -255,7 +230,7 @@ void Planner::calculate_path_wave()
   		p.y = j * map_.info.resolution + map_.info.origin.position.y;
   		auto& node = map_value(search_map_, i, j);
   		path_msg_.points.push_back(p);
-  		ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
+  		// ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
   		double min_g = node.g;
 
       SearchNode* previous_node = node.previous_node;		
