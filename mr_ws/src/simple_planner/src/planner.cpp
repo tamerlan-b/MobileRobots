@@ -158,6 +158,16 @@ private:
   Planner& planner_;
 };
 
+std::vector<MapIndex> Planner::get_neighbours(const MapIndex& pt)
+{
+  return {
+      {pt.i-1, pt.j},
+      {pt.i, pt.j-1},
+      {pt.i+1, pt.j},
+      {pt.i, pt.j+1}
+    };
+}
+
 void Planner::calculate_path_wave()
 {
   // очищаем карту поиска
@@ -193,14 +203,8 @@ void Planner::calculate_path_wave()
     SearchNode* previous_node = node.previous_node;
     if (previous_node != NULL)
       node.g = previous_node->g + 1;
-    
-    MapIndex neighbours[] = {
-      {node_index.i-1, node_index.j},
-      {node_index.i, node_index.j-1},
-      {node_index.i+1, node_index.j},
-      {node_index.i, node_index.j+1}
-    };
 
+    auto neighbours = this->get_neighbours(node_index);
     for (MapIndex & nb : neighbours)
     {
       if (indices_in_map(nb.i, nb.j))
@@ -277,13 +281,7 @@ void Planner::calculate_path()
     if (previous_node != NULL)
       node.g = previous_node->g + 1;
 
-    MapIndex neighbours[] = {
-      {node_index.i-1, node_index.j},
-      {node_index.i, node_index.j-1},
-      {node_index.i+1, node_index.j},
-      {node_index.i, node_index.j+1}
-    };
-
+    auto neighbours = this->get_neighbours(node_index);
     for (MapIndex & nb : neighbours)
     {
       if (indices_in_map(nb.i, nb.j))

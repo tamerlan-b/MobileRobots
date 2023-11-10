@@ -57,6 +57,8 @@ private:
 
   double heruistic(int i, int j);
 
+  std::vector<MapIndex> get_neighbours(const MapIndex& pt);
+
   // функции для работы с картами и индексами
   // Проверка индексов на нахождение в карте
   bool indices_in_map(int i, int j);
