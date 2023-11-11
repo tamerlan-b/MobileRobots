@@ -168,6 +168,25 @@ std::vector<MapIndex> Planner::get_neighbours(const MapIndex& pt)
     };
 }
 
+void Planner::create_path(const MapIndex& start_index, const MapIndex& target_index)
+{
+  int i = target_index.i;
+  int j = target_index.j;
+  geometry_msgs::Point32 p;
+  while (i != start_index.i || j != start_index.j) {
+    p.x = i * this->map_.info.resolution + this->map_.info.origin.position.x;
+    p.y = j * this->map_.info.resolution + this->map_.info.origin.position.y;
+    auto& node = map_value(this->search_map_, i, j);
+    path_msg_.points.push_back(p);
+    // ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
+    double min_g = node.g;
+
+    SearchNode* previous_node = node.previous_node;		
+    i = previous_node->i;
+    j = previous_node->j;
+  }
+}
+
 void Planner::calculate_path_wave()
 {
   // очищаем карту поиска
@@ -226,21 +245,7 @@ void Planner::calculate_path_wave()
 
   // fill path message with points from path 
   if (found) {
-  	int i = target_index.i;
-  	int j = target_index.j;
-  	geometry_msgs::Point32 p;
-  	while (i != start_index.i || j != start_index.j) {
-  		p.x = i * map_.info.resolution + map_.info.origin.position.x;
-  		p.y = j * map_.info.resolution + map_.info.origin.position.y;
-  		auto& node = map_value(search_map_, i, j);
-  		path_msg_.points.push_back(p);
-  		// ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
-  		double min_g = node.g;
-
-      SearchNode* previous_node = node.previous_node;		
-      i = previous_node->i;
-      j = previous_node->j;
-  	}
+    this->create_path(start_index, target_index);
   }
 }
 
@@ -313,21 +318,7 @@ void Planner::calculate_path()
 
   // fill path message with points from path 
   if (found) {
-  	int i = target_index.i;
-  	int j = target_index.j;
-  	geometry_msgs::Point32 p;
-  	while (i != start_index.i || j != start_index.j) {
-  		p.x = i * map_.info.resolution + map_.info.origin.position.x;
-  		p.y = j * map_.info.resolution + map_.info.origin.position.y;
-  		auto& node = map_value(search_map_, i, j);
-  		path_msg_.points.push_back(p);
-  		// ROS_INFO_STREAM("i = "<< i <<" j = " << j << " g = " << node.g);
-  		double min_g = node.g;
-
-      SearchNode* previous_node = node.previous_node;		
-      i = previous_node->i;
-      j = previous_node->j;
-  	}
+    this->create_path(start_index, target_index);
   }
 }
 
