@@ -18,6 +18,8 @@ double map_resolution = 0.1;
 int map_width = 2000;
 int map_height = 2000;
 
+bool USE_BAYES = true;
+
 
 //создаем сообщение карты
 nav_msgs::OccupancyGrid map_msg;
@@ -161,7 +163,7 @@ void laserCallback(const sensor_msgs::LaserScan& scan)
     map_msg.data[ y* map_width + x] = 0;
 
     // Заполняем карту
-    create_map(scan, scanTransform, map_msg, true);
+    create_map(scan, scanTransform, map_msg, USE_BAYES);
 
     // публикуем сообщение с построенной картой
     mapPub.publish(map_msg);
